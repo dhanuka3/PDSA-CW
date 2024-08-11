@@ -1,0 +1,524 @@
+#include <iostream>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+//#include<hpdf.h>
+
+using namespace std;
+
+struct node {
+    FILE *fp;
+    struct node *prev;
+    struct node *next;
+};
+
+struct node *first = NULL;
+struct node *last = NULL;
+int y = 1;
+char h[20];
+
+void add(FILE *g, char file[20]) {
+    char c;
+    g = fopen(file, "a");
+    cout << "Enter Content of your file (Enter # to end, \\ for new line): " << endl;
+    cin.ignore();
+    while ((c = getchar()) != '#') {
+        if (c != '\\') {
+            fprintf(g, "%c", c);
+            cout << c;
+        } else {
+            fprintf(g, "\n");
+            cout << "\n";
+        }
+    }
+    fclose(g);
+}
+
+void insertion() {
+    int ch, ch1;
+    struct node *p = first;
+    char c;
+    char filename[20];
+    char heading[100];
+    struct node *t = (struct node*) malloc(sizeof(struct node));
+    sprintf(filename, "%s%d.txt", h, y);
+    y++;
+    t->fp = fopen(filename, "w");
+
+    cout << "------------------------------------------------------" << endl;
+    cout << "Enter 1 for Insert page at beginning" << endl;
+    cout << "Enter 2 for Insert page at last" << endl;
+    cout << "Enter your choice: ";
+    cin >> ch;
+    cout << "-----------------------------------------------------------" << endl;
+
+    if (first == NULL) {
+        cout << "Enter Heading of file: ";
+        cin.ignore();
+        cin.getline(heading, 100);
+        fprintf(t->fp, "\t\t\t%s\n", heading);
+    } else {
+        cout << "IS THIS PAGE HAS ANY HEADING OR SUB HEADING?" << endl;
+        cout << "1. YES\t2. NO: ";
+        cin >> ch1;
+        if (ch1 == 1) {
+            cout << "ENTER HEADING OF FILE: ";
+            cin.ignore();
+            cin.getline(heading, 100);
+            fprintf(t->fp, "\t\t\t%s\n", heading);
+        }
+    }
+    fclose(t->fp);
+    cout << "----------------------------------------------" << endl;
+
+    switch (ch) {
+        case 1:
+            if (first == NULL) {
+                t->next = NULL;
+                t->prev = NULL;
+                first = t;
+                last = first;
+            } else {
+                t->next = first;
+                t->prev = NULL;
+                first->prev = t;
+                first = t;
+            }
+            add(t->fp, filename);
+            break;
+        case 2:
+            if (last == NULL) {
+                t->next = NULL;
+                t->prev = NULL;
+                last = t;
+                first = last;
+            } else {
+                t->next = NULL;
+                t->prev = last;
+                last->next = t;
+                last = t;
+            }
+            add(t->fp, filename);
+            break;
+        default:
+            cout << "-------------------------------" << endl;
+            cout << "ENTER OUT OF CHOICE" << endl;
+            cout << "-------------------------------" << endl;
+    }
+}
+
+
+void deletion() {
+    int po, ch;
+    struct node *p = first;
+    struct node *q = NULL;  // Initialize q to NULL
+    struct node *temp = NULL;
+
+    cout << "----------------------------------" << endl;
+    cout << "Enter 1 for DELETE PAGE FROM BEGINNING" << endl;
+    cout << "Enter 2 for DELETE PAGE FROM LAST" << endl;
+    cout << "Enter 3 for DELETE PAGE FROM ANY POSITION" << endl;
+    cout << "----------------------------------" << endl;
+    cout << "Enter your choice: ";
+    cin >> ch;
+    cout << "----------------------------------" << endl;
+
+    switch (ch) {
+        case 1:
+            if (first == NULL) {
+                cout << "NO PAGE FOUND" << endl;
+            } else {
+                // Delete the first page
+                temp = first;
+                first = first->next;
+                if (first != NULL)
+                    first->prev = NULL;
+                else
+                    last = NULL;
+
+                // Delete the file
+                char filename[20];
+                sprintf(filename, "%s%d.txt", h, 1);
+                remove(filename);
+
+                // Adjust file names for remaining pages
+                struct node *current = first;
+                int pageNumber = 2;
+                while (current != NULL) {
+                    char oldFilename[20], newFilename[20];
+                    sprintf(oldFilename, "%s%d.txt", h, pageNumber);
+                    sprintf(newFilename, "%s%d.txt", h, pageNumber - 1);
+                    rename(oldFilename, newFilename);
+                    current = current->next;
+                    pageNumber++;
+                }
+
+                free(temp);
+            }
+            break;
+
+        case 2:
+            if (first == NULL) {
+                cout << "NO PAGE FOUND" << endl;
+            } else {
+                // Delete the last page
+                temp = last;
+                last = last->prev;
+                if (last != NULL)
+                    last->next = NULL;
+                else
+                    first = NULL;
+
+                // Delete the file
+                char filename[20];
+                sprintf(filename, "%s%d.txt", h, y - 1);
+                remove(filename);
+
+                free(temp);
+            }
+            break;
+
+        case 3:
+            cout << "----------------------------------" << endl;
+            cout << "Enter Position: ";
+            cin >> po;
+            cout << "----------------------------------" << endl;
+
+            if (po == 1) {
+                if (first == NULL) {
+                    cout << "NO PAGE FOUND" << endl;
+                } else {
+                    // Delete the first page
+                    temp = first;
+                    first = first->next;
+                    if (first != NULL)
+                        first->prev = NULL;
+                    else
+                        last = NULL;
+
+                    // Delete the file
+                    char filename[20];
+                    sprintf(filename, "%s%d.txt", h, po);
+                    remove(filename);
+
+                    // Adjust file names for remaining pages
+                    struct node *current = first;
+                    int pageNumber = 2;
+                    while (current != NULL) {
+                        char oldFilename[20], newFilename[20];
+                        sprintf(oldFilename, "%s%d.txt", h, pageNumber);
+                        sprintf(newFilename, "%s%d.txt", h, pageNumber - 1);
+                        rename(oldFilename, newFilename);
+                        current = current->next;
+                        pageNumber++;
+                    }
+
+                    free(temp);
+                }
+            } else {
+                p = first;
+                for (int i = 1; i < po && p != NULL; i++) {
+                    q = p;
+                    p = p->next;
+                }
+                if (p == NULL) {
+                    cout << "-------------------------------" << endl;
+                    cout << "Position out of Bound" << endl;
+                    cout << "-------------------------------" << endl;
+                } else {
+                    if (p == last) {
+                        last = q;
+                        if (last != NULL)
+                            last->next = NULL;
+                        else
+                            first = NULL;
+                    } else {
+                        q->next = p->next;
+                        if (p->next != NULL)
+                            p->next->prev = q;
+                    }
+
+                    // Delete the file
+                    char filename[20];
+                    sprintf(filename, "%s%d.txt", h, po);
+                    remove(filename);
+
+                    // Adjust file names for remaining pages
+                    struct node *current = p->next;
+                    int pageNumber = po + 1;
+                    while (current != NULL) {
+                        char oldFilename[20], newFilename[20];
+                        sprintf(oldFilename, "%s%d.txt", h, pageNumber);
+                        sprintf(newFilename, "%s%d.txt", h, pageNumber - 1);
+                        rename(oldFilename, newFilename);
+                        current = current->next;
+                        pageNumber++;
+                    }
+                    free(p);
+                }
+            }
+            break;
+
+        default:
+            cout << "Enter valid choice" << endl;
+    }
+}
+
+
+
+void searching() {
+    int ch, i;
+    char c;
+    char filename[20];
+    struct node *p = first;
+    cout << "------------------------------------" << endl;
+    cout << "Enter page number: ";
+    cin >> ch;
+    cout << "------------------------------------" << endl;
+    for (i = 1; i < ch; i++) {
+        p = p->next;
+        if (p == NULL)
+            break;
+    }
+    if (p != NULL) {
+        cout << "-------------------------------------" << endl;
+        sprintf(filename, "%s%d.txt", h, ch);
+        p->fp = fopen(filename, "r");
+        cout << endl;
+        while ((c = fgetc(p->fp)) != EOF) {
+            putchar(c);
+        }
+        fclose(p->fp);
+        cout << endl;
+        cout << "--------------------------------------" << endl;
+        int x;
+        cout << "Enter 1 for previous page" << endl;
+        cout << "Enter 2 for next page" << endl;
+        cout << "Enter 3 for exit" << endl;
+        cout << "Enter your choice: ";
+        cin >> x;
+        cout << "--------------------------------------" << endl;
+        switch (x) {
+            case 1:
+                if (p->prev == NULL)
+                    cout << "NO PAGE FOUND" << endl;
+                else {
+                    cout << "--------------------------------------" << endl;
+                    sprintf(filename, "%s%d.txt", h, ch - 1);
+                    p->fp = fopen(filename, "r");
+                    cout << endl;
+                    while ((c = fgetc(p->fp)) != EOF) {
+                        putchar(c);
+                    }
+                    fclose(p->fp);
+                    cout << endl;
+                    cout << "--------------------------------------" << endl;
+                }
+                break;
+            case 2:
+                if (p->next == NULL)
+                    cout << "NO PAGE FOUND" << endl;
+                else {
+                    cout << "--------------------------------------" << endl;
+                    sprintf(filename, "%s%d.txt", h, ch + 1);
+                    p->fp = fopen(filename, "r");
+                    cout << endl;
+                    while ((c = fgetc(p->fp)) != EOF) {
+                        putchar(c);
+                    }
+                    fclose(p->fp);
+                    cout << endl;
+                    cout << "--------------------------------------" << endl;
+                }
+                break;
+            default:
+                break;
+        }
+    } else {
+        cout << "------------------------------------" << endl;
+        cout << "Page number is not found" << endl;
+        cout << "------------------------------------" << endl;
+    }
+}
+
+void swapPage() {
+    int x, y;
+    cout << "Enter page numbers to swap: ";
+    cin >> x >> y;
+    char file1[20], file2[20], tempFile[] = "temp.txt";
+    sprintf(file1, "%s%d.txt", h, x);
+    sprintf(file2, "%s%d.txt", h, y);
+    if (rename(file1, tempFile) != 0) {
+        perror("Error renaming file1 to temp");
+        return;
+    }
+    if (rename(file2, file1) != 0) {
+        perror("Error renaming file2 to file1");
+        return;
+    }
+    if (rename(tempFile, file2) != 0) {
+        perror("Error renaming temp to file2");
+        return;
+    }
+    cout << "Pages swapped successfully." << endl;
+}
+
+void appendPageData() {
+    int pageNumber;
+    cout << "Enter the page number to append data: ";
+    cin >> pageNumber;
+    char filename[20];
+    sprintf(filename, "%s%d.txt", h, pageNumber);
+    FILE *file = fopen(filename, "a");
+    if (file == NULL) {
+        cout << "Error opening file " << filename << endl;
+        return;
+    }
+    char c;
+    cout << "Enter Content of your file (Enter # to end, \\ for new line): " << endl;
+    cin.ignore();
+    while ((c = getchar()) != '#') {
+        if (c != '\\') {
+            fprintf(file, "%c", c);
+            cout << c;
+        } else {
+            fprintf(file, "\n");
+            cout << "\n";
+        }
+    }
+    fclose(file);
+}
+void duplicatePage() {
+    int pageNumber;
+    cout << "Enter the page number to duplicate: ";
+    cin >> pageNumber;
+    char srcFile[20], destFile[20];
+    sprintf(srcFile, "%s%d.txt", h, pageNumber);
+    sprintf(destFile, "%s%d.txt", h, y);
+    y++;
+
+    FILE *src = fopen(srcFile, "r");
+    if (src == NULL) {
+        cout << "Error opening source file " << srcFile << endl;
+        return;
+    }
+
+    FILE *dest = fopen(destFile, "w");
+    if (dest == NULL) {
+        cout << "Error opening destination file " << destFile << endl;
+        fclose(src);
+        return;
+    }
+
+    char c;
+    while ((c = fgetc(src)) != EOF) {
+        fputc(c, dest);
+    }
+
+    fclose(src);
+    fclose(dest);
+
+    struct node *newNode = (struct node*) malloc(sizeof(struct node));
+    newNode->fp = fopen(destFile, "r");
+    newNode->next = NULL;
+    newNode->prev = last;
+    if (last != NULL) {
+        last->next = newNode;
+    } else {
+        first = newNode;
+    }
+    last = newNode;
+
+    cout << "Page duplicated successfully." << endl;
+}
+
+
+void display() {
+    struct node *p = first;
+    int pageNumber = 1;
+    char c;
+
+    if (first == NULL) {
+        cout << "------------------------------------" << endl;
+        cout << "No pages to display" << endl;
+        cout << "------------------------------------" << endl;
+        return;
+    }
+
+    while (p != NULL) {
+        char filename[20];
+        sprintf(filename, "%s%d.txt", h, pageNumber);
+        p->fp = fopen(filename, "r");
+        if (p->fp == NULL) {
+            cout << "Error opening file " << filename << endl;
+            return;
+        }
+
+        cout << "------------------------------------" << endl;
+        cout << "Page Number: " << pageNumber << endl;
+        cout << "------------------------------------" << endl;
+
+        while ((c = fgetc(p->fp)) != EOF) {
+            putchar(c);
+        }
+        fclose(p->fp);
+
+        p = p->next;
+        pageNumber++;
+        cout << endl;
+    }
+    cout << "------------------------------------" << endl;
+}
+
+
+int main() {
+    cout << "Enter name of your file: ";
+    cin >> h;
+    int ch;
+    do {
+        cout << "----------------------------------" << endl;
+        cout << "1. Add Page" << endl;
+        cout << "2. Delete Page" << endl;
+        cout << "3. Search Page" << endl;
+        cout << "4. Display Pages" << endl;
+        cout << "5. Swap Pages" << endl;
+        cout << "6. Append Data to Page" << endl;
+        cout << "7. Duplicate Page" << endl;
+        cout << "8. Exit" << endl;
+        cout << "----------------------------------" << endl;
+        cout << "Enter your choice: ";
+        cin >> ch;
+        cout << "----------------------------------" << endl;
+
+        switch (ch) {
+            case 1:
+                insertion();
+                break;
+            case 2:
+                deletion();
+                break;
+            case 3:
+                searching();
+                break;
+            case 4:
+                display();
+                break;
+            case 5:
+                swapPage();
+                break;
+            case 6:
+                appendPageData();
+                break;
+            case 7:
+                duplicatePage();
+                break;
+            case 8:3
+                cout << "Exiting program..." << endl;
+                break;
+            default:
+                cout << "Invalid choice. Please try again." << endl;
+        }
+    } while (ch != 8);
+
+    return 0;
+}

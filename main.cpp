@@ -2,7 +2,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-//#include<hpdf.h>
+
 
 using namespace std;
 
@@ -35,7 +35,7 @@ void add(FILE *g, char file[20]) {
 }
 
 void insertion() {
-    int ch, ch1;
+    int ch, po, ch1;
     struct node *p = first;
     char c;
     char filename[20];
@@ -48,6 +48,7 @@ void insertion() {
     cout << "------------------------------------------------------" << endl;
     cout << "Enter 1 for Insert page at beginning" << endl;
     cout << "Enter 2 for Insert page at last" << endl;
+    cout << "Enter 3 for Insert page after any position" << endl;
     cout << "Enter your choice: ";
     cin >> ch;
     cout << "-----------------------------------------------------------" << endl;
@@ -100,6 +101,31 @@ void insertion() {
             }
             add(t->fp, filename);
             break;
+        case 3:
+            cout << "-------------------------------" << endl;
+            cout << "Enter Position: ";
+            cin >> po;
+            cout << "-------------------------------" << endl;
+            for (int i = 0; i < po - 1; i++) {
+                p = p->next;
+                if (p == NULL)
+                    break;
+            }
+            if (p != NULL) {
+                t->prev = p;
+                t->next = p->next;
+                if (p->next != NULL)
+                    p->next->prev = t;
+                p->next = t;
+                if (t->next == NULL)
+                    last = t;
+            } else {
+                cout << "-------------------------------" << endl;
+                cout << "POSITION OUT OF BOUND" << endl;
+                cout << "-------------------------------" << endl;
+            }
+            add(t->fp, filename);
+            break;
         default:
             cout << "-------------------------------" << endl;
             cout << "ENTER OUT OF CHOICE" << endl;
@@ -107,11 +133,10 @@ void insertion() {
     }
 }
 
-
 void deletion() {
     int po, ch;
     struct node *p = first;
-    struct node *q = NULL;  // Initialize q to NULL
+    struct node *q = NULL;
     struct node *temp = NULL;
 
     cout << "----------------------------------" << endl;
@@ -128,7 +153,7 @@ void deletion() {
             if (first == NULL) {
                 cout << "NO PAGE FOUND" << endl;
             } else {
-                // Delete the first page
+
                 temp = first;
                 first = first->next;
                 if (first != NULL)
@@ -136,12 +161,12 @@ void deletion() {
                 else
                     last = NULL;
 
-                // Delete the file
+
                 char filename[20];
                 sprintf(filename, "%s%d.txt", h, 1);
                 remove(filename);
 
-                // Adjust file names for remaining pages
+
                 struct node *current = first;
                 int pageNumber = 2;
                 while (current != NULL) {
@@ -161,7 +186,7 @@ void deletion() {
             if (first == NULL) {
                 cout << "NO PAGE FOUND" << endl;
             } else {
-                // Delete the last page
+
                 temp = last;
                 last = last->prev;
                 if (last != NULL)
@@ -169,7 +194,7 @@ void deletion() {
                 else
                     first = NULL;
 
-                // Delete the file
+
                 char filename[20];
                 sprintf(filename, "%s%d.txt", h, y - 1);
                 remove(filename);
@@ -188,7 +213,7 @@ void deletion() {
                 if (first == NULL) {
                     cout << "NO PAGE FOUND" << endl;
                 } else {
-                    // Delete the first page
+
                     temp = first;
                     first = first->next;
                     if (first != NULL)
@@ -196,12 +221,12 @@ void deletion() {
                     else
                         last = NULL;
 
-                    // Delete the file
+
                     char filename[20];
                     sprintf(filename, "%s%d.txt", h, po);
                     remove(filename);
 
-                    // Adjust file names for remaining pages
+
                     struct node *current = first;
                     int pageNumber = 2;
                     while (current != NULL) {
@@ -238,12 +263,12 @@ void deletion() {
                             p->next->prev = q;
                     }
 
-                    // Delete the file
+
                     char filename[20];
                     sprintf(filename, "%s%d.txt", h, po);
                     remove(filename);
 
-                    // Adjust file names for remaining pages
+
                     struct node *current = p->next;
                     int pageNumber = po + 1;
                     while (current != NULL) {
@@ -254,6 +279,7 @@ void deletion() {
                         current = current->next;
                         pageNumber++;
                     }
+
                     free(p);
                 }
             }
@@ -263,9 +289,6 @@ void deletion() {
             cout << "Enter valid choice" << endl;
     }
 }
-
-
-
 void searching() {
     int ch, i;
     char c;
@@ -388,14 +411,33 @@ void appendPageData() {
     }
     fclose(file);
 }
+
 void duplicatePage() {
-    int pageNumber;
+    int pageNumber, insertPosition;
     cout << "Enter the page number to duplicate: ";
     cin >> pageNumber;
+    cout << "Enter the position to insert the duplicated page: ";
+    cin >> insertPosition;
+
+    if (pageNumber <= 0 || insertPosition <= 0 || pageNumber > y) {
+        cout << "Invalid page number or insertion position." << endl;
+        return;
+    }
+
     char srcFile[20], destFile[20];
     sprintf(srcFile, "%s%d.txt", h, pageNumber);
-    sprintf(destFile, "%s%d.txt", h, y);
+
+
+    struct node *current = last;
+    for (int i = y; i >= insertPosition; i--) {
+        char oldFilename[20], newFilename[20];
+        sprintf(oldFilename, "%s%d.txt", h, i);
+        sprintf(newFilename, "%s%d.txt", h, i + 1);
+        rename(oldFilename, newFilename);
+    }
     y++;
+
+    sprintf(destFile, "%s%d.txt", h, insertPosition);
 
     FILE *src = fopen(srcFile, "r");
     if (src == NULL) {
@@ -418,19 +460,48 @@ void duplicatePage() {
     fclose(src);
     fclose(dest);
 
+
     struct node *newNode = (struct node*) malloc(sizeof(struct node));
     newNode->fp = fopen(destFile, "r");
     newNode->next = NULL;
-    newNode->prev = last;
-    if (last != NULL) {
-        last->next = newNode;
-    } else {
-        first = newNode;
-    }
-    last = newNode;
+    newNode->prev = NULL;
 
-    cout << "Page duplicated successfully." << endl;
+    if (insertPosition == 1) {
+        newNode->next = first;
+        newNode->prev = NULL;
+        if (first != NULL)
+            first->prev = newNode;
+        first = newNode;
+        if (last == NULL)
+            last = first;
+    } else {
+        struct node *prevNode = first;
+        for (int i = 1; i < insertPosition - 1 && prevNode != NULL; i++) {
+            prevNode = prevNode->next;
+        }
+
+        if (prevNode == NULL) {
+            cout << "Invalid insertion position." << endl;
+            free(newNode);
+            return;
+        }
+
+        newNode->next = prevNode->next;
+        newNode->prev = prevNode;
+
+        if (prevNode->next != NULL)
+            prevNode->next->prev = newNode;
+
+        prevNode->next = newNode;
+
+        if (newNode->next == NULL)
+            last = newNode;
+    }
+
+    cout << "Page duplicated and inserted successfully at position " << insertPosition << "." << endl;
 }
+
+
 
 
 void display() {
@@ -512,7 +583,7 @@ int main() {
             case 7:
                 duplicatePage();
                 break;
-            case 8:3
+            case 8:
                 cout << "Exiting program..." << endl;
                 break;
             default:
